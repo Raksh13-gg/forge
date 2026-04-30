@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>ForgeTrack</title>
+    <script>
+      // Global Repair Script: Clear everything if ?repair=true is present
+      if (window.location.search.includes('repair=true')) {
+        console.log('Repairing session and clearing all local data...');
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear all cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+
+        // Clear IndexedDB (Supabase sometimes stores here)
+        if (window.indexedDB && window.indexedDB.databases) {
+          window.indexedDB.databases().then(dbs => {
+            dbs.forEach(db => window.indexedDB.deleteDatabase(db.name));
+          });
+        }
+
+        // Unregister all service workers
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(reg => reg.unregister());
+          });
+        }
+        
+        setTimeout(() => {
+          window.location.href = window.location.origin + '/login';
+        }, 500);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
