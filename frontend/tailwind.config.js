@@ -7,26 +7,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        void: '#09090B',
-        canvas: '#0C0C0E',
+        void: '#F8FAFC',
+        canvas: '#F1F5F9',
         surface: {
-          DEFAULT: '#121217',
-          raised: '#18181F',
-          inset: '#0A0A0F',
+          DEFAULT: '#FFFFFF',
+          raised: '#FFFFFF',
+          inset: '#F8FAFC',
         },
         border: {
-          subtle: 'rgba(255,255,255,0.04)',
-          default: 'rgba(255,255,255,0.08)',
-          strong: 'rgba(255,255,255,0.14)',
+          subtle: 'rgba(15, 23, 42, 0.05)',
+          default: 'rgba(15, 23, 42, 0.1)',
+          strong: 'rgba(15, 23, 42, 0.15)',
         },
+        primary: '#0F172A',
+        secondary: '#475569',
+        tertiary: '#64748B',
         fg: {
-          primary: '#FAFAFA',
-          secondary: '#A1A1AA',
-          tertiary: '#52525B',
+          primary: '#0F172A',
+          secondary: '#475569',
+          tertiary: '#64748B',
         },
         accent: {
-          glow: '#8B5CF6',
-          indigo: '#6366F1',
+          glow: '#22C55E', // Vibrant Green matching the image
+          indigo: '#3B82F6', // Blue secondary
         },
         success: { 
           DEFAULT: '#10B981', 
@@ -75,3 +78,4 @@ export default {
   },
   plugins: [],
 };
+// Force Vite reload

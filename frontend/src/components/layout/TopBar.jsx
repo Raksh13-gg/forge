@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Search, ChevronRight, Bell } from 'lucide-react';
+import { Search, ChevronRight, Bell, Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSearch } from '../../contexts/SearchContext';
 
-export default function TopBar() {
+export default function TopBar({ onToggleMobile }) {
   const { profile, user, role } = useAuth();
   const location = useLocation();
-  const [search, setSearch] = useState('');
+  const { globalSearchQuery, setGlobalSearchQuery } = useSearch();
 
   // Basic breadcrumb logic
   const pathParts = location.pathname.split('/').filter(Boolean);
@@ -23,6 +24,12 @@ export default function TopBar() {
     <header className="h-20 flex items-center justify-between px-6 lg:px-12 w-full z-20 relative bg-void/50 backdrop-blur-2xl border-b border-subtle/40">
       {/* Breadcrumbs */}
       <div className="flex items-center gap-3 text-[13px]">
+        <button 
+          onClick={onToggleMobile}
+          className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface-raised transition-colors"
+        >
+          <Menu size={20} className="text-tertiary" />
+        </button>
         <span className="text-micro font-bold text-tertiary uppercase tracking-[0.2em] opacity-60">Overview</span>
         <ChevronRight size={14} className="text-tertiary/40" />
         <span className="text-primary font-semibold tracking-tight">{currentPage.replace(/-/g, ' ')}</span>
@@ -37,11 +44,14 @@ export default function TopBar() {
           </div>
           <input
             type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={globalSearchQuery}
+            onChange={(e) => setGlobalSearchQuery(e.target.value)}
             placeholder="Search everything..."
             className="w-full bg-surface-inset/50 border border-subtle rounded-xl py-2.5 pl-10 pr-4 text-[13.5px] text-primary focus:outline-none focus:border-accent-glow/50 focus:bg-surface-raised/30 transition-all placeholder:text-tertiary/70"
           />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+            <span className="text-[10px] font-bold text-tertiary bg-void/50 px-1.5 py-0.5 rounded border border-subtle">⏎</span>
+          </div>
         </div>
 
         {/* Notifications (Placeholder) */}
@@ -56,7 +66,7 @@ export default function TopBar() {
           className="flex items-center gap-3.5 pl-8 border-l border-subtle/50 hover:opacity-80 transition-all group"
         >
           <div className="hidden md:flex flex-col items-end">
-            <span className="text-[13.5px] font-bold text-primary group-hover:text-accent-glow transition-colors">
+            <span className="text-[15px] font-bold text-primary group-hover:text-accent-glow transition-colors">
               {displayName}
             </span>
             <span className="text-[10px] font-bold text-tertiary uppercase tracking-widest mt-0.5">

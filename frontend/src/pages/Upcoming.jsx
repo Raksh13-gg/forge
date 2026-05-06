@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getTodayLocal } from '../utils/dateUtils';
 import { 
   Calendar, 
   MapPin, 
@@ -21,7 +22,7 @@ export default function Upcoming() {
     async function loadSessions() {
       setLoading(true);
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayLocal();
         const { data } = await supabase
           .from('sessions')
           .select('*')

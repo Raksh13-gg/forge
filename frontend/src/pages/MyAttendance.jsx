@@ -81,6 +81,15 @@ export default function MyAttendance() {
     return { pct, present: presentCount, total, currStreak, maxStreak };
   }, [sessions, attendance]);
 
+  const scrollToSession = (sessionId) => {
+    const element = document.getElementById(`session-${sessionId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('bg-accent-glow/20');
+      setTimeout(() => element.classList.remove('bg-accent-glow/20'), 2000);
+    }
+  };
+
   return (
     <div className="pb-32 max-w-7xl mx-auto px-6 animate-in fade-in duration-700">
       
@@ -154,7 +163,8 @@ export default function MyAttendance() {
                         <div 
                           key={sess.id}
                           title={`${sess.date}: ${sess.topic}`}
-                          className={`w-10 h-10 rounded-xl border border-subtle transition-all hover:scale-110 ${isPresent ? 'bg-success-fg shadow-[0_0_12px_rgba(16,185,129,0.3)]' : (rec ? 'bg-danger-fg' : 'bg-surface-inset/50')}`}
+                          onClick={() => scrollToSession(sess.id)}
+                          className={`w-10 h-10 rounded-xl border border-subtle transition-all hover:scale-110 cursor-pointer ${isPresent ? 'bg-success-fg shadow-[0_0_12px_rgba(16,185,129,0.3)]' : (rec ? 'bg-danger-fg' : 'bg-surface-inset/50')}`}
                         />
                       );
                     })}
@@ -197,7 +207,11 @@ export default function MyAttendance() {
                     {[...sessions].reverse().map(sess => {
                       const rec = attendance.find(a => a.session_id === sess.id);
                       return (
-                        <tr key={sess.id} className="hover:bg-surface-raised/20 transition-colors">
+                        <tr 
+                          key={sess.id} 
+                          id={`session-${sess.id}`}
+                          className="hover:bg-surface-raised/20 transition-colors"
+                        >
                           <td className="px-8 py-5 text-sm font-bold text-tertiary font-mono">{sess.date}</td>
                           <td className="px-8 py-5">
                             <div className="text-[14.5px] font-bold text-primary tracking-tight">{sess.topic}</div>

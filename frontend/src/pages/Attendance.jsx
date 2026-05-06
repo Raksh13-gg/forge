@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useSearch } from '../contexts/SearchContext';
 import { FALLBACK_STUDENTS } from '../lib/fallbackData';
 import {
   Calendar,
@@ -20,6 +21,8 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import CalendarComponent from '../components/Calendar';
+import { getTodayLocal } from '../utils/dateUtils';
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 const Skeleton = () => (
@@ -101,13 +104,14 @@ export default function Attendance() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayLocal();
   const [date, setDate] = useState(today);
   const [session, setSession] = useState(null);
+  const { globalSearchQuery, setGlobalSearchQuery } = useSearch();
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
   const [initialAttendance, setInitialAttendance] = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
+  const [sessionDates, setSessionDates] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -121,13 +125,13 @@ export default function Attendance() {
 
   // ── Derived values
   const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) return students;
-    const q = searchQuery.toLowerCase();
+    if (!globalSearchQuery.trim()) return students;
+    const q = globalSearchQuery.toLowerCase();
     return students.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.usn.toLowerCase().includes(q)
     );
-  }, [students, searchQuery]);
+  }, [students, globalSearchQuery]);
 
   const presentCount = useMemo(() =>
     Object.values(attendance).filter(Boolean).length, [attendance]);
@@ -142,6 +146,10 @@ export default function Attendance() {
     async function load() {
       setLoading(true);
       try {
+        // 0. Fetch all session dates for the calendar
+        const { data: allSessions } = await supabase.from('sessions').select('date');
+        if (allSessions) setSessionDates(allSessions.map(s => s.date));
+
         // 1. Always load students first (instantly)
         console.log('Fetching students from Supabase...');
         const { data: studentsData, error: studentError } = await supabase
@@ -279,33 +287,18 @@ export default function Attendance() {
           <h1 className="text-display-md text-primary font-black tracking-tighter leading-none mb-4">Mark Attendance</h1>
           <p className="text-body-lg text-secondary font-medium tracking-tight">Syncing roster for {students.length} students.</p>
         </div>
-
-        {/* Date Selector */}
-        <div className="flex items-center gap-3 bg-surface-raised/30 backdrop-blur-md border border-subtle p-2 rounded-2xl shadow-xl self-start lg:self-end">
-          <button
-            onClick={() => setDate(today)}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${date === today ? 'bg-white text-void shadow-lg' : 'text-tertiary hover:text-secondary'}`}
-          >
-            Today
-          </button>
-          <div className="w-px h-6 bg-subtle/50" />
-          <div className="relative flex items-center">
-            <Calendar size={16} className="absolute left-4 text-accent-glow pointer-events-none" />
-            <input
-              type="date"
-              value={date}
-              max={today}
-              onChange={e => setDate(e.target.value)}
-              className="bg-transparent text-sm font-bold text-primary pl-11 pr-4 py-2.5 focus:outline-none cursor-pointer"
-            />
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* ── Left Sidebar: Session Configuration */}
         <div className="lg:col-span-4 space-y-6">
+          <CalendarComponent 
+            selectedDate={date} 
+            onDateChange={setDate} 
+            highlightedDates={sessionDates} 
+          />
+
           <div className="card p-8 border-accent-glow/20 relative group">
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-accent-glow to-transparent opacity-50" />
             
@@ -409,8 +402,8 @@ export default function Attendance() {
                 <input
                   type="text"
                   placeholder="Search students..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  value={globalSearchQuery}
+                  onChange={e => setGlobalSearchQuery(e.target.value)}
                   className="input w-full pl-10 h-10 text-sm"
                 />
               </div>

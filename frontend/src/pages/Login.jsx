@@ -56,6 +56,13 @@ export default function Login() {
 
       if (authError) throw authError;
 
+      // SPEC RULE: First-time student login (password === usn)
+      if (tab === 'student' && password.trim().toUpperCase() === identifier.trim().toUpperCase()) {
+        console.log('🔄 First-time student login detected. Forcing password change.');
+        navigate('/change-password', { replace: true });
+        return;
+      }
+
       const destination = location.state?.from?.pathname || '/';
       navigate(destination, { replace: true });
       

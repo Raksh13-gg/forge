@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -13,13 +13,56 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Fingerprint
+  Fingerprint,
+  X
 } from 'lucide-react';
 
-export default function Sidebar() {
-  const { role, profile, user, signOut } = useAuth();
+export default function Sidebar({ isMobileOpen, onCloseMobile }) {
+  const { role, user, profile, signOut } = useAuth();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [width, setWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebarWidth');
+    return saved ? parseInt(saved, 10) : 280;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isResizing) {
+        const newWidth = e.clientX;
+        if (newWidth >= 200 && newWidth <= 500) {
+          setWidth(newWidth);
+          localStorage.setItem('sidebarWidth', newWidth.toString());
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+    };
+  }, [isResizing]);
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
 
   // Fall back to JWT metadata when public.users row is missing
   const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User';
@@ -59,10 +102,21 @@ export default function Sidebar() {
 
   return (
     <aside 
-      className={`hidden lg:flex flex-col bg-void border-r border-subtle h-screen sticky top-0 transition-all duration-500 ease-in-out z-30 shadow-2xl ${
-        isCollapsed ? 'w-20' : 'w-[280px]'
-      }`}
+      className={`fixed lg:static inset-y-0 left-0 z-50 flex flex-col h-full bg-void border-r border-subtle transition-all duration-500 ease-in-out shadow-2xl lg:shadow-none
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isResizing ? 'transition-none border-r-accent-glow/50' : ''}
+      `}
+      style={{ 
+        width: isCollapsed ? '80px' : `${width}px`
+      }}
     >
+      {/* Resize Handle */}
+      {!isCollapsed && (
+        <div
+          onMouseDown={startResizing}
+          className={`absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-accent-glow/30 transition-colors z-40 hidden lg:block ${isResizing ? 'bg-accent-glow/50' : ''}`}
+        />
+      )}
       {/* Header */}
       <div className={`flex items-center px-6 py-8 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed ? (
@@ -80,13 +134,19 @@ export default function Sidebar() {
             <Fingerprint size={24} />
           </div>
         )}
+        <button 
+          onClick={onCloseMobile}
+          className="lg:hidden ml-auto p-2 text-tertiary hover:text-primary transition-colors"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       {/* Welcome Block */}
       {!isCollapsed && (
         <div className="px-6 pb-8 border-b border-subtle/50 animate-in fade-in duration-500">
           <div className="p-4 rounded-2xl bg-surface-raised/30 border border-subtle/30 backdrop-blur-sm">
-            <h3 className="font-display font-bold text-primary truncate text-sm">
+            <h3 className="font-display font-bold text-primary text-base">
               {displayName.split(' ')[0]}
             </h3>
             <div className="flex items-center gap-2 mt-1.5">
@@ -153,7 +213,7 @@ export default function Sidebar() {
       {/* Collapse Toggle */}
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-32 w-6 h-6 flex items-center justify-center rounded-full bg-surface-raised border border-subtle text-tertiary hover:text-primary transition-all z-50 shadow-xl opacity-0 lg:group-hover:opacity-100 group"
+        className="absolute -right-3 top-32 w-6 h-6 flex items-center justify-center rounded-full bg-surface-raised border border-subtle text-tertiary hover:text-primary transition-all z-50 shadow-xl opacity-0 group-hover:opacity-100"
       >
         {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
       </button>

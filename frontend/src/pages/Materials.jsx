@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { useSearch } from '../contexts/SearchContext';
 import { 
-  Search, 
   Plus, 
-  ExternalLink, 
   Presentation, 
   Video, 
   FileText, 
@@ -14,16 +13,19 @@ import {
   Calendar,
   Filter,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 
 export default function Materials() {
+  const { globalSearchQuery, setGlobalSearchQuery } = useSearch();
   const [sessionsWithMaterials, setSessionsWithMaterials] = useState([]);
   const [allSessions, setAllSessions] = useState([]);
-  const [months, setMonths] = useState([]);
+  const [months, setMonths] = useState([]); // stores { number, name }
   
   const [selectedMonth, setSelectedMonth] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +34,8 @@ export default function Materials() {
   const [newUrl, setNewUrl] = useState('');
   const [newSessionId, setNewSessionId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // stores material object
   
   const [toast, setToast] = useState(null);
 
@@ -47,7 +51,10 @@ export default function Materials() {
         const filtered = data.filter(s => s.materials && s.materials.length > 0);
         setSessionsWithMaterials(filtered);
         setAllSessions(data);
-        const uniqueMonths = [...new Set(data.map(s => s.month_number))].sort((a,b) => b - a);
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const uniqueMonths = [...new Set(data.map(s => s.month_number))]
+          .sort((a,b) => b - a)
+          .map(m => ({ number: m, name: monthNames[m-1] }));
         setMonths(uniqueMonths);
       }
     } catch (err) {
@@ -82,15 +89,28 @@ export default function Materials() {
     }
   };
 
+  const handleDeleteMaterial = async (id) => {
+    setDeleting(true);
+    const { error } = await supabase.from('materials').delete().eq('id', id);
+    setDeleting(false);
+    
+    if (!error) {
+      setConfirmDelete(null);
+      setToast('Resource removed from the library.');
+      setTimeout(() => setToast(null), 4000);
+      fetchMaterials();
+    }
+  };
+
   const filteredData = useMemo(() => {
     return sessionsWithMaterials.filter(session => {
       const monthMatch = selectedMonth === 'All' || session.month_number.toString() === selectedMonth;
       const searchMatch = 
-        session.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        session.materials.some(m => m.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        session.topic.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+        session.materials.some(m => m.title.toLowerCase().includes(globalSearchQuery.toLowerCase()));
       return monthMatch && searchMatch;
     });
-  }, [sessionsWithMaterials, selectedMonth, searchQuery]);
+  }, [sessionsWithMaterials, selectedMonth, globalSearchQuery]);
 
   const getIconForType = (type) => {
     switch (type) {
@@ -122,32 +142,15 @@ export default function Materials() {
 
       {/* ── Filter Bar */}
       <div className="flex flex-col md:flex-row gap-5 mb-12 z-20 relative">
-        <div className="flex items-center gap-3 bg-surface-raised/40 backdrop-blur-xl border border-subtle p-2 rounded-2xl shadow-lg w-full md:w-auto">
-          <div className="flex items-center px-4 py-2 gap-2 text-micro text-tertiary font-black uppercase tracking-widest border-r border-subtle/50">
-            <Filter size={14} /> Month
-          </div>
-          <select 
-            className="bg-transparent text-sm font-bold text-primary px-4 py-2 focus:outline-none cursor-pointer"
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-          >
-            <option value="All">All Time</option>
-            {months.map(m => (
-              <option key={m} value={m}>Month {m}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="relative flex-1 group">
-          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-tertiary group-focus-within:text-accent-glow transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Search topics, filenames, or keywords..."
-            className="w-full bg-surface-raised/40 backdrop-blur-xl border border-subtle rounded-2xl h-14 pl-14 pr-6 text-sm text-primary focus:outline-none focus:border-accent-glow/50 transition-all placeholder:text-tertiary/60"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <CustomSelect 
+          label="Month"
+          value={selectedMonth}
+          onChange={setSelectedMonth}
+          options={[
+            { value: 'All', label: 'All Time' },
+            ...months.map(m => ({ value: m.number.toString(), label: m.name }))
+          ]}
+        />
       </div>
 
       {/* ── Content Grid */}
@@ -164,7 +167,7 @@ export default function Materials() {
           </div>
           <h3 className="text-display-xs text-secondary mb-3 font-black tracking-tight">Empty Library</h3>
           <p className="text-body text-tertiary max-w-sm mb-8 leading-relaxed">No matching resources found for your current filters.</p>
-          <button className="btn-secondary px-8" onClick={() => { setSearchQuery(''); setSelectedMonth('All'); }}>Reset Explorer</button>
+          <button className="btn-secondary px-8" onClick={() => { setGlobalSearchQuery(''); setSelectedMonth('All'); }}>Reset Explorer</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -184,14 +187,16 @@ export default function Materials() {
               
               <div className="px-8 pb-8 flex flex-col gap-3 mt-auto">
                 {session.materials.map(mat => (
-                  <a 
+                  <div 
                     key={mat.id} 
-                    href={mat.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
                     className="flex items-center justify-between p-4 rounded-xl bg-surface-raised/40 border border-subtle hover:bg-surface-raised hover:border-accent-glow/30 transition-all group/item"
                   >
-                    <div className="flex items-center gap-4 overflow-hidden">
+                    <a 
+                      href={mat.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 overflow-hidden flex-1"
+                    >
                       <div className="w-9 h-9 rounded-lg bg-surface flex items-center justify-center group-hover/item:scale-110 transition-transform">
                         {getIconForType(mat.type)}
                       </div>
@@ -199,13 +204,58 @@ export default function Materials() {
                         <p className="text-[13.5px] font-bold text-primary truncate group-hover/item:text-accent-glow transition-colors">{mat.title}</p>
                         <p className="text-micro text-tertiary uppercase font-bold tracking-widest opacity-60 mt-0.5">{mat.type}</p>
                       </div>
+                    </a>
+                    <div className="flex items-center gap-2">
+                       <a href={mat.url} target="_blank" rel="noopener noreferrer" className="p-2 text-tertiary hover:text-primary transition-colors">
+                          <ArrowUpRight size={14} />
+                       </a>
+                       <button 
+                        onClick={() => setConfirmDelete(mat)}
+                        className="p-2 text-tertiary hover:text-danger-fg transition-colors opacity-0 group-hover/item:opacity-100"
+                       >
+                          <Trash2 size={14} />
+                       </button>
                     </div>
-                    <ArrowUpRight size={14} className="text-tertiary group-hover/item:text-primary transition-all group-hover/item:translate-x-0.5 group-hover/item:-translate-y-0.5" />
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-void/90 backdrop-blur-xl animate-in fade-in duration-300">
+           <div className="bg-surface-raised border border-danger-border/30 rounded-[2.5rem] p-10 max-w-[480px] w-full animate-in zoom-in-95 duration-300 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-danger-fg opacity-20" />
+              
+              <div className="flex flex-col items-center text-center">
+                 <div className="w-20 h-20 rounded-3xl bg-danger-bg/20 flex items-center justify-center text-danger-fg mb-8 shadow-[0_0_40px_rgba(239,68,68,0.2)]">
+                    <AlertCircle size={40} />
+                 </div>
+                 <h2 className="text-display-xs text-primary font-black tracking-tighter mb-4">Purge Resource?</h2>
+                 <p className="text-secondary text-sm font-medium leading-relaxed mb-10 px-4">
+                    You are about to remove <span className="text-primary font-bold">"{confirmDelete.title}"</span>. This action is irreversible and the resource will be detached from the session ledger.
+                 </p>
+                 
+                 <div className="flex gap-4 w-full">
+                    <button 
+                      onClick={() => setConfirmDelete(null)} 
+                      className="btn-secondary flex-1 h-12 font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteMaterial(confirmDelete.id)}
+                      disabled={deleting}
+                      className="btn-primary flex-1 h-12 bg-danger-fg text-white font-black shadow-xl"
+                    >
+                      {deleting ? 'Purging...' : 'Confirm Purge'}
+                    </button>
+                 </div>
+              </div>
+           </div>
         </div>
       )}
 
@@ -230,15 +280,11 @@ export default function Materials() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-micro text-tertiary uppercase font-black tracking-widest ml-1">Target Session</label>
-                <select 
-                  className="input w-full bg-void/50 h-12"
+                <CustomSelect 
                   value={newSessionId}
-                  onChange={e => setNewSessionId(e.target.value)}
-                >
-                  {allSessions.map(s => (
-                    <option key={s.id} value={s.id} className="bg-surface-raised">{s.date} — {s.topic}</option>
-                  ))}
-                </select>
+                  onChange={setNewSessionId}
+                  options={allSessions.map(s => ({ value: s.id.toString(), label: `${s.date} — ${s.topic}` }))}
+                />
               </div>
               
               <div className="space-y-2">
@@ -255,16 +301,16 @@ export default function Materials() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-micro text-tertiary uppercase font-black tracking-widest ml-1">Asset Category</label>
-                  <select 
-                    className="input w-full bg-void/50 h-12"
+                  <CustomSelect 
                     value={newType}
-                    onChange={e => setNewType(e.target.value)}
-                  >
-                    <option value="slides">Presentation</option>
-                    <option value="recording">Video Recording</option>
-                    <option value="document">PDF / Document</option>
-                    <option value="link">Web Link</option>
-                  </select>
+                    onChange={setNewType}
+                    options={[
+                      { value: 'slides', label: 'Presentation' },
+                      { value: 'recording', label: 'Video Recording' },
+                      { value: 'document', label: 'PDF / Document' },
+                      { value: 'link', label: 'Web Link' }
+                    ]}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-micro text-tertiary uppercase font-black tracking-widest ml-1">URL / Link</label>

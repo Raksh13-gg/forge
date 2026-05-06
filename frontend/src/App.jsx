@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SearchProvider } from './contexts/SearchContext';
 import RoleGuard from './components/auth/RoleGuard';
 import MainLayout from './components/layout/MainLayout';
 
 // Public pages
 import Login from './pages/Login';
 import Forbidden from './pages/Forbidden';
+import ChangePassword from './pages/ChangePassword';
 import DevTokens from './pages/DevTokens';
 
 // Mentor pages
@@ -38,37 +40,40 @@ function IndexRedirect() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/403" element={<Forbidden />} />
-          <Route path="/dev-tokens" element={<DevTokens />} />
-          
-          {/* Role-directed Root */}
-          <Route path="/" element={<IndexRedirect />} />
-
-          {/* Protected Application Routes with Shell */}
-          <Route element={<MainLayout />}>
+      <SearchProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/403" element={<Forbidden />} />
+            <Route path="/dev-tokens" element={<DevTokens />} />
             
-            {/* Mentor Only Routes */}
-            <Route path="/dashboard" element={<RoleGuard allowedRoles={['mentor']}><Dashboard /></RoleGuard>} />
-            <Route path="/attendance" element={<RoleGuard allowedRoles={['mentor']}><Attendance /></RoleGuard>} />
-            <Route path="/history" element={<RoleGuard allowedRoles={['mentor']}><History /></RoleGuard>} />
-            <Route path="/materials" element={<RoleGuard allowedRoles={['mentor']}><Materials /></RoleGuard>} />
-            <Route path="/upload" element={<RoleGuard allowedRoles={['mentor']}><UploadCSV /></RoleGuard>} />
+            {/* Role-directed Root */}
+            <Route path="/" element={<IndexRedirect />} />
 
-            {/* Student Only Routes */}
-            <Route path="/me/attendance" element={<RoleGuard allowedRoles={['student']}><MyAttendance /></RoleGuard>} />
-            <Route path="/me/upcoming" element={<RoleGuard allowedRoles={['student']}><Upcoming /></RoleGuard>} />
-            <Route path="/me/materials" element={<RoleGuard allowedRoles={['student']}><MyMaterials /></RoleGuard>} />
+            {/* Protected Application Routes with Shell */}
+            <Route element={<MainLayout />}>
+              
+              {/* Mentor Only Routes */}
+              <Route path="/dashboard" element={<RoleGuard allowedRoles={['mentor']}><Dashboard /></RoleGuard>} />
+              <Route path="/attendance" element={<RoleGuard allowedRoles={['mentor']}><Attendance /></RoleGuard>} />
+              <Route path="/history" element={<RoleGuard allowedRoles={['mentor']}><History /></RoleGuard>} />
+              <Route path="/materials" element={<RoleGuard allowedRoles={['mentor']}><Materials /></RoleGuard>} />
+              <Route path="/upload" element={<RoleGuard allowedRoles={['mentor']}><UploadCSV /></RoleGuard>} />
 
-            {/* Shared Routes (any authenticated user) */}
-            <Route path="/settings" element={<RoleGuard allowedRoles={['mentor', 'student']}><Settings /></RoleGuard>} />
+              {/* Student Only Routes */}
+              <Route path="/me/attendance" element={<RoleGuard allowedRoles={['student']}><MyAttendance /></RoleGuard>} />
+              <Route path="/me/upcoming" element={<RoleGuard allowedRoles={['student']}><Upcoming /></RoleGuard>} />
+              <Route path="/me/materials" element={<RoleGuard allowedRoles={['student']}><MyMaterials /></RoleGuard>} />
 
-          </Route>
-        </Routes>
-      </BrowserRouter>
+              {/* Shared Routes (any authenticated user) */}
+              <Route path="/settings" element={<RoleGuard allowedRoles={['mentor', 'student']}><Settings /></RoleGuard>} />
+
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </SearchProvider>
     </AuthProvider>
   );
 }

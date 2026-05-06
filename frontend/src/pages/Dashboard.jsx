@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getTodayLocal } from '../utils/dateUtils';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useDashboardStats } from '../hooks/useDashboardStats';
@@ -69,7 +70,7 @@ function TodaysSessionCard() {
   useEffect(() => {
     async function fetchToday() {
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayLocal();
         const { data, error } = await supabase.from('sessions').select('*').eq('date', today).maybeSingle();
         if (!error) setSession(data);
       } catch (err) {
@@ -140,7 +141,7 @@ function TodaysAttendanceCard() {
   useEffect(() => {
     async function fetchAttendance() {
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayLocal();
         const { data: session } = await supabase.from('sessions').select('id').eq('date', today).maybeSingle();
         
         if (!session) {
@@ -333,7 +334,7 @@ export default function Dashboard() {
         <div className="relative">
           <div className="absolute -left-10 -top-10 w-40 h-40 bg-accent-glow blur-[100px] opacity-10 pointer-events-none" />
           <h1 className="text-display-md text-primary mb-3 font-black tracking-tighter leading-none">
-            Welcome Back, <span className="bg-gradient-to-r from-white via-white to-accent-glow bg-clip-text text-transparent">{displayName.split(' ')[0]}</span>
+            Welcome Back, <span className="text-accent-glow">{displayName.split(' ')[0]}</span>
           </h1>
           <p className="text-body-lg text-secondary font-medium tracking-tight">System is operational. {ticker?.students || 0} students synced.</p>
         </div>

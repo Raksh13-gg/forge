@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSearch } from '../contexts/SearchContext';
 import { supabase } from '../lib/supabase';
 import { FALLBACK_STUDENTS } from '../lib/fallbackData';
 import { 
@@ -17,9 +18,9 @@ import {
 } from 'lucide-react';
 
 export default function History() {
+  const { globalSearchQuery, setGlobalSearchQuery } = useSearch();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -97,11 +98,20 @@ export default function History() {
     loadStudentData();
   }, [selectedStudent]);
 
+  const scrollToSession = (sessionId) => {
+    const element = document.getElementById(`session-${sessionId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('bg-accent-glow/20');
+      setTimeout(() => element.classList.remove('bg-accent-glow/20'), 2000);
+    }
+  };
+
   const filteredStudents = useMemo(() => 
     students.filter(s => 
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      s.usn.toLowerCase().includes(searchQuery.toLowerCase())
-    ), [students, searchQuery]
+      s.name.toLowerCase().includes(globalSearchQuery.toLowerCase()) || 
+      s.usn.toLowerCase().includes(globalSearchQuery.toLowerCase())
+    ), [students, globalSearchQuery]
   );
 
   const getPercentageColor = (pct) => {
@@ -152,8 +162,8 @@ export default function History() {
                     autoFocus
                     placeholder="Search by name or USN..."
                     className="w-full bg-void/50 border border-subtle rounded-xl py-2.5 pl-10 pr-4 text-[13.5px] text-primary focus:outline-none focus:border-accent-glow/50 transition-all"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    value={globalSearchQuery}
+                    onChange={e => setGlobalSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
@@ -171,7 +181,7 @@ export default function History() {
                       onClick={() => {
                         setSelectedStudent(s);
                         setDropdownOpen(false);
-                        setSearchQuery('');
+                        setGlobalSearchQuery('');
                       }}
                     >
                       <div className="min-w-0">
@@ -281,7 +291,8 @@ export default function History() {
                       <div 
                         key={sess.id}
                         title={`${sess.date}: ${sess.topic}`}
-                        className={`w-10 h-10 rounded-xl border border-subtle ${statusColor} ${glow} cursor-help transition-all hover:scale-110 hover:-translate-y-1 relative group/box`}
+                        onClick={() => scrollToSession(sess.id)}
+                        className={`w-10 h-10 rounded-xl border border-subtle ${statusColor} ${glow} cursor-pointer transition-all hover:scale-110 hover:-translate-y-1 relative group/box`}
                       >
                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-void border border-default p-2 rounded-lg text-[9px] font-black uppercase text-primary whitespace-nowrap opacity-0 group-hover/box:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
                            {sess.date}
@@ -332,7 +343,11 @@ export default function History() {
                   {[...sessions].reverse().map(sess => {
                     const rec = attendanceRecords.find(a => a.session_id === sess.id);
                     return (
-                      <tr key={sess.id} className="hover:bg-surface-raised/20 transition-colors group">
+                      <tr 
+                        key={sess.id} 
+                        id={`session-${sess.id}`}
+                        className="hover:bg-surface-raised/20 transition-colors group"
+                      >
                         <td className="px-8 py-5 text-sm font-bold text-tertiary font-mono tracking-tight group-hover:text-primary transition-colors">{sess.date}</td>
                         <td className="px-8 py-5">
                           <div className="text-[14.5px] font-bold text-primary tracking-tight">{sess.topic}</div>
