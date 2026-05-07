@@ -34,12 +34,10 @@ export default function History() {
   useEffect(() => {
     async function loadStudents() {
       const { data, error } = await supabase.from('students').select('*').order('name');
-      if (data && data.length > 0) {
-        setStudents(data);
-      } else {
-        console.warn('History fetch failed or empty, using fallback.', error);
-        setStudents(FALLBACK_STUDENTS);
+      if (error) {
+        console.error('History fetch failed:', error);
       }
+      setStudents(data || []);
     }
     loadStudents();
   }, []);

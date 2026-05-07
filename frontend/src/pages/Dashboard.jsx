@@ -60,48 +60,100 @@ function TickerStrip({ data, loading }) {
 }
 
 // -------------------------------------------------------------
-// Card 1: Today's Session
+// Session History Picker Component
 // -------------------------------------------------------------
-function TodaysSessionCard() {
+function SessionPicker({ selectedDate, onDateSelect }) {
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSessions() {
+      const { data } = await supabase
+        .from('sessions')
+        .select('date')
+        .order('date', { ascending: false })
+        .limit(10);
+      
+      if (data) setSessions(data.map(s => s.date));
+      setLoading(false);
+    }
+    fetchSessions();
+  }, []);
+
+  if (loading) return <div className="h-14 w-full bg-surface-raised animate-pulse rounded-xl mb-10" />;
+
+  return (
+    <div className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <Calendar size={14} className="text-tertiary" />
+        <span className="text-micro text-tertiary uppercase font-bold tracking-widest">Select Session Date</span>
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        {sessions.map(date => {
+          const isSelected = date === selectedDate;
+          const d = new Date(date);
+          return (
+            <button
+              key={date}
+              onClick={() => onDateSelect(date)}
+              className={`shrink-0 px-6 py-3 rounded-xl border transition-all flex flex-col items-center min-w-[100px] ${
+                isSelected 
+                  ? 'bg-accent-glow border-accent-glow text-white shadow-[0_8px_16px_rgba(30,215,96,0.3)] scale-105' 
+                  : 'bg-surface-raised border-subtle text-secondary hover:border-accent-glow/50'
+              }`}
+            >
+              <span className={`text-[10px] font-black uppercase tracking-tighter ${isSelected ? 'opacity-80' : 'text-tertiary'}`}>
+                {d.toLocaleDateString(undefined, { month: 'short' })}
+              </span>
+              <span className="text-xl font-black tracking-tight leading-none mt-1">
+                {d.getDate()}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// Card 1: Selected Session Topic
+// -------------------------------------------------------------
+function SelectedSessionCard({ date }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    async function fetchToday() {
-      try {
-        const today = getTodayLocal();
-        const { data, error } = await supabase.from('sessions').select('*').eq('date', today).maybeSingle();
-        if (!error) setSession(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    async function fetchSession() {
+      setLoading(true);
+      const { data } = await supabase.from('sessions').select('*').eq('date', date).maybeSingle();
+      setSession(data);
+      setLoading(false);
     }
-    fetchToday();
-  }, []);
+    fetchSession();
+  }, [date]);
 
   if (loading) return <SkeletonCard />;
 
   return (
-    <div className="card flex flex-col justify-between p-10 group relative overflow-hidden">
+    <div className="card flex flex-col justify-between p-10 group relative overflow-hidden h-full">
       <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
         <Activity size={120} />
       </div>
       
       <div className="relative z-10">
         <div className="flex items-center gap-2.5 mb-6">
-          <span className="w-2 h-2 rounded-full bg-accent-glow animate-pulse shadow-[0_0_8px_var(--accent-glow)]" />
-          <div className="text-micro text-tertiary uppercase tracking-[0.2em] font-bold">TODAY'S SCHEDULE</div>
+          <span className={`w-2 h-2 rounded-full ${session ? 'bg-accent-glow shadow-[0_0_8px_var(--accent-glow)] animate-pulse' : 'bg-tertiary/30'}`} />
+          <div className="text-micro text-tertiary uppercase tracking-[0.2em] font-bold">SESSION INFO</div>
         </div>
         
         {session ? (
           <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-            <h2 className="text-display-sm text-primary mb-5 font-bold tracking-tight leading-[1.1]">{session.topic}</h2>
+            <h2 className="text-display-sm text-primary mb-5 font-bold tracking-tight leading-[1.1] line-clamp-2">{session.topic}</h2>
             <div className="flex flex-wrap items-center gap-3 mt-6">
-              <span className="pill bg-accent-glow/10 text-accent-glow border border-accent-glow/20 px-3 py-1.5 text-[10px] font-bold">
-                {session.session_type.toUpperCase()}
+              <span className="pill bg-accent-glow/10 text-accent-glow border border-accent-glow/20 px-3 py-1.5 text-[10px] font-bold uppercase">
+                {session.session_type}
               </span>
               <span className="pill bg-surface-raised text-secondary border border-subtle px-3 py-1.5 text-[10px] font-bold">
                 <Clock size={12} className="mr-1.5" />
@@ -111,18 +163,18 @@ function TodaysSessionCard() {
           </div>
         ) : (
           <div className="animate-in fade-in duration-500">
-            <h2 className="text-display-sm text-tertiary/40 mb-3 font-bold tracking-tight">No Session</h2>
-            <p className="text-sm text-tertiary leading-relaxed max-w-[240px]">There are no sessions recorded in the schedule for today.</p>
+            <h2 className="text-display-sm text-tertiary/40 mb-3 font-bold tracking-tight leading-tight">No Class Recorded</h2>
+            <p className="text-sm text-tertiary leading-relaxed max-w-[240px]">No session data was found for this date.</p>
           </div>
         )}
       </div>
 
       <div className="mt-12 relative z-10">
         <button 
-          onClick={() => navigate(session ? '/attendance' : '/attendance')} 
-          className={session ? "btn-secondary w-full group/btn" : "btn-primary w-full group/btn"}
+          onClick={() => navigate('/attendance')} 
+          className="btn-primary w-full group/btn"
         >
-          {session ? "View Attendance" : "Initialize Session"}
+          {session ? "View Attendance" : "Setup Session"}
           <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-1" />
         </button>
       </div>
@@ -131,48 +183,42 @@ function TodaysSessionCard() {
 }
 
 // -------------------------------------------------------------
-// Card 2: Today's Attendance
+// Card 2: Selected Attendance Stats
 // -------------------------------------------------------------
-function TodaysAttendanceCard() {
+function SelectedAttendanceCard({ date }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchAttendance() {
-      try {
-        const today = getTodayLocal();
-        const { data: session } = await supabase.from('sessions').select('id').eq('date', today).maybeSingle();
-        
-        if (!session) {
-          setStats(null);
-        } else {
-          const { data: attendance } = await supabase
-            .from('attendance')
-            .select('present, student_id')
-            .eq('session_id', session.id);
+      setLoading(true);
+      const { data: session } = await supabase.from('sessions').select('id').eq('date', date).maybeSingle();
+      
+      if (!session) {
+        setStats(null);
+      } else {
+        const { data: attendance } = await supabase
+          .from('attendance')
+          .select('present')
+          .eq('session_id', session.id);
 
-          if (!attendance || attendance.length === 0) {
-            setStats({ marked: false });
-          } else {
-            const presentCount = attendance.filter(a => a.present).length;
-            const total = attendance.length;
-            setStats({ marked: true, presentCount, total });
-          }
+        if (!attendance || attendance.length === 0) {
+          setStats({ marked: false });
+        } else {
+          const presentCount = attendance.filter(a => a.present).length;
+          const total = attendance.length;
+          setStats({ marked: true, presentCount, total });
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     }
     fetchAttendance();
-  }, []);
+  }, [date]);
 
   if (loading) return <SkeletonCard />;
 
   return (
-    <div className="card flex flex-col justify-between p-10 group relative overflow-hidden">
+    <div className="card flex flex-col justify-between p-10 group relative overflow-hidden h-full">
       <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
         <CheckCircle size={120} />
       </div>
@@ -180,17 +226,13 @@ function TodaysAttendanceCard() {
       <div className="relative z-10">
         <div className="flex items-center gap-2.5 mb-6 text-micro text-tertiary uppercase tracking-[0.2em] font-bold">
           <Activity size={13} className="text-success-fg" />
-          REALTIME STATUS
+          ATTENDANCE BREAKDOWN
         </div>
         
         {!stats || !stats.marked ? (
           <div className="animate-in fade-in duration-500">
-            <h2 className="text-display-sm text-tertiary/40 mb-3 font-bold tracking-tight">Pending</h2>
-            <p className="text-sm text-tertiary leading-relaxed mb-8 max-w-[240px]">Attendance has not been captured for the current session yet.</p>
-            <button onClick={() => navigate('/attendance')} className="btn-primary w-full group/btn h-12">
-              Mark Attendance
-              <Plus size={16} className="transition-transform group-hover/btn:rotate-90" />
-            </button>
+            <h2 className="text-display-sm text-tertiary/40 mb-3 font-bold tracking-tight">Data Unavailable</h2>
+            <p className="text-sm text-tertiary leading-relaxed mb-8 max-w-[240px]">We haven't recorded any attendance for this specific date yet.</p>
           </div>
         ) : (
           <div className="animate-in fade-in duration-500">
@@ -214,7 +256,7 @@ function TodaysAttendanceCard() {
             
             <p className="mt-8 text-xs text-secondary font-medium flex items-center gap-2">
               <CheckCircle size={14} className="text-success-fg" />
-              Capture successful for {stats.presentCount} students.
+              Accurate for {stats.presentCount} students.
             </p>
           </div>
         )}
@@ -317,12 +359,10 @@ function RecentActivityCard({ activities, loading }) {
   );
 }
 
-// -------------------------------------------------------------
-// Main Dashboard Assembly
-// -------------------------------------------------------------
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const { ticker, overview, activity, loading } = useDashboardStats();
+  const [selectedDate, setSelectedDate] = useState(getTodayLocal());
 
   const displayName = profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User';
   
@@ -339,7 +379,6 @@ export default function Dashboard() {
           <p className="text-body-lg text-secondary font-medium tracking-tight">System is operational. {ticker?.students || 0} students synced.</p>
         </div>
         
-        {/* Quick Sync Button */}
         <button 
           onClick={() => window.location.reload()}
           className="btn-secondary px-5 py-3 rounded-xl border border-subtle bg-surface-raised/30 backdrop-blur-md flex items-center gap-2.5 text-xs font-bold uppercase tracking-widest group"
@@ -349,13 +388,14 @@ export default function Dashboard() {
         </button>
       </div>
       
-      {/* Ticker Section */}
       <TickerStrip data={ticker} loading={loading} />
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <TodaysSessionCard />
-        <TodaysAttendanceCard />
+      {/* Date-Specific View Section */}
+      <SessionPicker selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <SelectedSessionCard date={selectedDate} />
+        <SelectedAttendanceCard date={selectedDate} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

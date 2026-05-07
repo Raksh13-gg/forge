@@ -7,25 +7,7 @@
 -- Actually, seeding `auth.users` directly in Supabase local via seed.sql is possible.
 -- For simplicity, we'll insert just our schema tables.
 
--- Insert 15 Sessions
-INSERT INTO public.sessions (date, topic, month_number, duration_hours, session_type)
-VALUES
-('2026-03-01', '8-Layer AI Stack', 6, 2.0, 'offline'),
-('2026-03-03', 'ReAct Agent Pattern', 6, 2.0, 'online'),
-('2026-03-05', 'pgvector RAG', 6, 2.0, 'offline'),
-('2026-03-08', 'Tiered Autonomy Multi-Agent', 6, 2.0, 'offline'),
-('2026-03-10', 'Function Calling with Gemini', 6, 2.0, 'online'),
-('2026-03-12', 'Fine-Tuning LLaMA 3', 6, 2.0, 'offline'),
-('2026-03-15', 'Prompt Engineering 2.0', 6, 2.0, 'offline'),
-('2026-03-17', 'Vector Search Deep Dive', 6, 2.5, 'online'),
-('2026-03-19', 'RAG Evaluations', 6, 2.0, 'offline'),
-('2026-03-22', 'Building AI Agents', 6, 2.0, 'offline'),
-('2026-03-24', 'LangChain vs LlamaIndex', 6, 2.0, 'online'),
-('2026-03-26', 'Agentic Workflows', 6, 3.0, 'offline'),
-('2026-03-29', 'AI Assistants Architecture', 6, 2.0, 'offline'),
-('2026-03-31', 'Deploying to Supabase', 6, 2.0, 'online'),
-('2026-04-02', 'Demo Day Prep', 6, 2.0, 'offline')
-ON CONFLICT DO NOTHING;
+
 
 -- Insert Students (25)
 INSERT INTO public.students (name, usn, branch_code)
@@ -57,25 +39,4 @@ VALUES
 ('Dev A', '4SH24CS025', 'CS')
 ON CONFLICT DO NOTHING;
 
--- Insert Materials (2 per session)
-INSERT INTO public.materials (session_id, title, type, url)
-SELECT id, topic || ' Slides', 'slides', 'https://slides.com/sample'
-FROM public.sessions;
 
-INSERT INTO public.materials (session_id, title, type, url)
-SELECT id, topic || ' Recording', 'recording', 'https://youtube.com/sample'
-FROM public.sessions;
-
--- Insert Import Logs (2 past entries)
-INSERT INTO public.import_log (filename, uploaded_by, total_rows, imported_rows, skipped_rows, status)
-VALUES
-('month_4_attendance.csv', 'Nischay', 100, 100, 0, 'completed'),
-('month_5_attendance.csv', 'Varun', 120, 118, 2, 'completed');
-
--- NOTE: Attendance inserts (Cartesian product of students x sessions)
--- This query marks ~80% attendance randomly.
-INSERT INTO public.attendance (student_id, session_id, present, marked_by)
-SELECT st.id, se.id, (random() > 0.2), 'system'
-FROM public.students st
-CROSS JOIN public.sessions se
-ON CONFLICT DO NOTHING;

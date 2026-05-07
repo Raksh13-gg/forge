@@ -16,6 +16,7 @@ import Attendance from './pages/Attendance';
 import History from './pages/History';
 import Materials from './pages/Materials';
 import UploadCSV from './pages/UploadCSV';
+import BulkAttendance from './pages/BulkAttendance';
 
 // Student pages
 import MyAttendance from './pages/MyAttendance';
@@ -60,7 +61,8 @@ function App() {
               <Route path="/attendance" element={<RoleGuard allowedRoles={['mentor']}><Attendance /></RoleGuard>} />
               <Route path="/history" element={<RoleGuard allowedRoles={['mentor']}><History /></RoleGuard>} />
               <Route path="/materials" element={<RoleGuard allowedRoles={['mentor']}><Materials /></RoleGuard>} />
-              <Route path="/upload" element={<RoleGuard allowedRoles={['mentor']}><UploadCSV /></RoleGuard>} />
+              <Route path="/upload" element={<RoleGuard allowedRoles={['mentor']}><BulkAttendance /></RoleGuard>} />
+              <Route path="/bulk-attendance" element={<RoleGuard allowedRoles={['mentor']}><BulkAttendance /></RoleGuard>} />
 
               {/* Student Only Routes */}
               <Route path="/me/attendance" element={<RoleGuard allowedRoles={['student']}><MyAttendance /></RoleGuard>} />

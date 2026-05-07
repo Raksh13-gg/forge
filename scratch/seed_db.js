@@ -34,21 +34,7 @@ async function seed() {
     console.log("Successfully seeded 15 students.");
   }
 
-  console.log("Seeding sessions...");
-  const sessions = [
-    { date: '2026-04-20', topic: '8-Layer AI Stack', month_number: 4, duration_hours: 2.0, session_type: 'offline' },
-    { date: '2026-04-22', topic: 'ReAct Agent Pattern', month_number: 4, duration_hours: 2.0, session_type: 'online' },
-    { date: '2026-04-24', topic: 'pgvector RAG', month_number: 4, duration_hours: 2.0, session_type: 'offline' },
-    { date: '2026-04-26', topic: 'Tiered Autonomy Multi-Agent', month_number: 4, duration_hours: 2.0, session_type: 'offline' },
-    { date: '2026-04-28', topic: 'Function Calling with Gemini', month_number: 4, duration_hours: 2.0, session_type: 'online' }
-  ];
 
-  const { error: sessionError } = await supabase.from('sessions').insert(sessions);
-  if (sessionError) {
-    console.error("Error seeding sessions:", sessionError);
-  } else {
-    console.log("Successfully seeded 5 sessions.");
-  }
 }
 
 seed();

@@ -175,10 +175,7 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
               <NavItem to="/materials" icon={BookOpen} label="Materials" />
             </div>
 
-            <div>
-              {!isCollapsed && <div className="text-[10px] font-bold text-tertiary mb-4 px-3 uppercase tracking-[0.2em] opacity-40">Database</div>}
-              <NavItem to="/upload" icon={Upload} label="Upload CSV" />
-            </div>
+              <NavItem to="/bulk-attendance" icon={Upload} label="AI Bulk Import" />
           </>
         )}
 

@@ -159,9 +159,8 @@ export default function Attendance() {
         
         let finalStudents = studentsData || [];
 
-        if (studentError || finalStudents.length === 0) {
-          console.warn('Supabase students fetch failed or returned empty. Using local fallback data.', studentError);
-          finalStudents = FALLBACK_STUDENTS;
+        if (studentError) {
+          console.error('Supabase students fetch failed:', studentError);
         }
 
         if (mounted) {
