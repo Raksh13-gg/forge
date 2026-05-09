@@ -102,8 +102,7 @@ export function AuthProvider({ children }) {
             student_id: stuData.id
           });
         } else {
-          // TOTAL FALLBACK (DEMO): If even student record isn't found, use ID 1
-          setProfile({ id: userId, display_name: 'Test Student', role: 'student', student_id: 1 });
+          setProfile(null);
         }
       }
     } catch (error) {

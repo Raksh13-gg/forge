@@ -34,21 +34,6 @@ export default function MyAttendance() {
         let finalSessions = sessionsRes.data || [];
         let finalAttendance = attendanceRes.data || [];
 
-        // FALLBACK: If DB is unreachable, use local attendance patterns for student 1
-        if (finalSessions.length === 0) {
-          console.warn('DB unreachable, using demo session data');
-          finalSessions = [
-            { id: 1, date: '2026-04-20', topic: '8-Layer AI Stack', duration_hours: 2 },
-            { id: 2, date: '2026-04-22', topic: 'ReAct Agent Pattern', duration_hours: 2 },
-            { id: 3, date: '2026-04-24', topic: 'pgvector RAG', duration_hours: 2 }
-          ];
-          finalAttendance = [
-            { session_id: 1, present: true },
-            { session_id: 2, present: true },
-            { session_id: 3, present: false }
-          ];
-        }
-
         setSessions(finalSessions);
         setAttendance(finalAttendance);
       } catch (err) {

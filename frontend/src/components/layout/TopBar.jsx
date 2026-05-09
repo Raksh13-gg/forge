@@ -65,14 +65,7 @@ export default function TopBar({ onToggleMobile }) {
           to="/settings" 
           className="flex items-center gap-3.5 pl-8 border-l border-subtle/50 hover:opacity-80 transition-all group"
         >
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-[15px] font-bold text-primary group-hover:text-accent-glow transition-colors">
-              {displayName}
-            </span>
-            <span className="text-[10px] font-bold text-tertiary uppercase tracking-widest mt-0.5">
-              {displayRole}
-            </span>
-          </div>
+          {/* Removed redundant name/role text for cleaner UI */}
           <div className="relative">
             <div className="absolute inset-0 bg-accent-glow blur-md opacity-0 group-hover:opacity-20 transition-opacity" />
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-surface-raised to-void border border-subtle flex items-center justify-center text-primary font-display font-extrabold text-sm shadow-xl group-hover:border-accent-glow/50 transition-all relative">

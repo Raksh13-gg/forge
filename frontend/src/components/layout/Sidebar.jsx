@@ -146,10 +146,7 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
       {!isCollapsed && (
         <div className="px-6 pb-8 border-b border-subtle/50 animate-in fade-in duration-500">
           <div className="p-4 rounded-2xl bg-surface-raised/30 border border-subtle/30 backdrop-blur-sm">
-            <h3 className="font-display font-bold text-primary text-base">
-              {displayName.split(' ')[0]}
-            </h3>
-            <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex items-center gap-2">
               <span className={`w-1.5 h-1.5 rounded-full ${role === 'mentor' ? 'bg-accent-glow shadow-[0_0_8px_var(--accent-glow)]' : 'bg-success-fg shadow-[0_0_8px_var(--success-fg)]'}`} />
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-tertiary">
                 {role === 'mentor' ? 'Mentor Active' : 'Student Active'}

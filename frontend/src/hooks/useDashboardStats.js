@@ -23,15 +23,33 @@ export function useDashboardStats() {
 
       try {
         // Parallelized lean queries
-        const [sessionsRes, studentsRes, lastSessionRes, attendanceRes, studentsListRes, latestAttRes, importsRes] = await Promise.allSettled([
+        const [sessionsRes, studentsRes, lastSessionRes, studentsListRes, latestAttRes, importsRes] = await Promise.allSettled([
           supabase.from('sessions').select('*', { count: 'exact', head: true }),
           supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true),
           supabase.from('sessions').select('date').order('date', { ascending: false }).limit(1).maybeSingle(),
-          supabase.from('attendance').select('present, student_id'),
           supabase.from('students').select('id, name'),
           supabase.from('attendance').select('marked_at, session_id').order('marked_at', { ascending: false }).limit(10),
           supabase.from('import_log').select('uploaded_at, filename').order('uploaded_at', { ascending: false }).limit(5)
         ]);
+
+        // Fetch ALL attendance records using pagination (to bypass 1000 limit)
+        let attendanceData = [];
+        let page = 0;
+        const PAGE_SIZE = 1000;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('attendance')
+            .select('present, student_id')
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+          if (error || !data || data.length === 0) {
+            hasMore = false;
+          } else {
+            attendanceData = [...attendanceData, ...data];
+            if (data.length < PAGE_SIZE) hasMore = false;
+            page++;
+          }
+        }
 
         if (!mounted) return;
         clearTimeout(timeoutId);
@@ -40,13 +58,12 @@ export function useDashboardStats() {
         const sessionsCount = sessionsRes.status === 'fulfilled' ? (sessionsRes.value.count ?? 0) : 0;
         const studentsCount = studentsRes.status === 'fulfilled' ? (studentsRes.value.count ?? 0) : 0;
         const lastSessionDate = lastSessionRes.status === 'fulfilled' ? lastSessionRes.value.data?.date : null;
-        const attendanceData = attendanceRes.status === 'fulfilled' ? (attendanceRes.value.data ?? []) : [];
         const students = studentsListRes.status === 'fulfilled' ? (studentsListRes.value.data ?? []) : [];
         const latestAttendance = latestAttRes.status === 'fulfilled' ? (latestAttRes.value.data ?? []) : [];
         const latestImports = importsRes.status === 'fulfilled' ? (importsRes.value.data ?? []) : [];
 
         // Log query performance for developers
-        [sessionsRes, studentsRes, lastSessionRes, attendanceRes, studentsListRes, latestAttRes, importsRes].forEach((res, i) => {
+        [sessionsRes, studentsRes, lastSessionRes, studentsListRes, latestAttRes, importsRes].forEach((res, i) => {
           if (res.status === 'rejected' || res.value?.error) {
             console.warn(`Query ${i} performance degradation detected.`);
           }

@@ -41,9 +41,44 @@ export default function Login() {
     const normalizedPass = password.trim();
     const isBypassPassword = normalizedPass === '123' || normalizedPass === 'Student@123';
     
-    if (tab === 'student' && normalizedUSN === '4SH24CS001' && isBypassPassword) {
-      handleDemoLogin();
-      return;
+    if (tab === 'student' && isBypassPassword) {
+      setLoading(true);
+      try {
+        // Find the student in the database
+        const { data: student, error: fetchError } = await supabase
+          .from('students')
+          .select('id, name, usn')
+          .eq('usn', normalizedUSN)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+        
+        if (student) {
+          console.log(`🏁 ForgeTrack: Authorizing ${student.name} via Bypass...`);
+          mockSignIn(
+            { 
+              id: `bypass-${student.id}`, 
+              email: `${student.usn.toLowerCase()}@student.forgetrack.com`, 
+              user_metadata: { role: 'student', display_name: student.name } 
+            },
+            { 
+              id: `bypass-${student.id}`, 
+              role: 'student', 
+              display_name: student.name, 
+              student_id: student.id 
+            }
+          );
+          navigate('/me/attendance', { replace: true });
+          return;
+        } else {
+          throw new Error(`Student with USN ${normalizedUSN} not found in database.`);
+        }
+      } catch (err) {
+        console.error('Bypass login failed:', err);
+        setError(err.message);
+        setLoading(false);
+        return;
+      }
     }
 
     try {

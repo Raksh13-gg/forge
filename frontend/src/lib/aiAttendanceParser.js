@@ -23,14 +23,19 @@ SAMPLE ROWS:
 ${JSON.stringify(sampleRows, null, 2)}
 
 Your task is to identify:
-1. Which column uniquely identifies the student (prefer USN/Roll Number over Email or Name).
-2. Which columns represent an attendance session (a day or session where attendance was marked). 
-   - Some attendance columns might have clear dates (e.g., "7 May"). If so, extract the date as YYYY-MM-DD (assume current year if missing).
-   - Some attendance columns might just say "Attendance", "Day 1", etc. For these, set "needsInference" to true and "date" to null.
+1. "usnColumn": Which column uniquely identifies the student (prefer USN/Roll Number/ID over Email or Name). Look for values like "4SF24CI005", "4SH24CS001" etc.
+2. "nameColumn": Which column contains the student's full name (e.g. "name", "Name", "Student Name", "Full Name"). Can be null if not present.
+3. "dateColumns": Which columns represent an attendance session (a day or session where attendance was marked).
+   - Values in attendance columns are typically: true/false, 1/0, P/A, Present/Absent, or similar boolean-like values.
+   - If a column header is a date string like "30/04/26", "29-04-2026", parse it as YYYY-MM-DD. Assume "26" means 2026, "25" means 2025.
+   - If a column header is a number between 40000 and 60000, it is an Excel serial date. Convert: JS_date = new Date(Math.round((serial - 25569) * 86400 * 1000)).
+   - If the header says "Day 1", "Day 2", etc., set needsInference to true and date to null.
+   - Skip columns that are clearly NOT attendance: "name", "email", "usn", "admission_number", "branch_code", "Knowledge", "Skill", "Score", "Assessment", "n8n", "link", "SL NO", "Joined", "Pre", "Post", "Total".
 
-Respond ONLY with a raw JSON object matching this schema (do not wrap in markdown blocks like \`\`\`json):
+Respond ONLY with a raw JSON object (no markdown, no \`\`\`json):
 {
   "usnColumn": "string | null",
+  "nameColumn": "string | null",
   "dateColumns": [
     {
       "header": "string",
@@ -44,7 +49,6 @@ Respond ONLY with a raw JSON object matching this schema (do not wrap in markdow
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
-    // Clean up potential markdown formatting
     const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanedText);
   } catch (error) {
@@ -70,7 +74,7 @@ ${JSON.stringify(currentSchema, null, 2)}
 Based on the user's context, try to logically deduce the exact 'YYYY-MM-DD' dates for the columns where 'needsInference' is true. 
 Usually, columns are sequential. For example, if Day 1 is missing, and the user says "Classes started May 1st and happen every Tuesday and Thursday", you must map Day 1 to the first matching date, Day 2 to the next, etc. Assume the year is the current year unless specified.
 
-Respond ONLY with a raw JSON object containing the updated "dateColumns" array (do not wrap in markdown blocks like \`\`\`json):
+Respond ONLY with a raw JSON object (no markdown, no \`\`\`json):
 {
   "dateColumns": [
     {
@@ -90,6 +94,7 @@ Respond ONLY with a raw JSON object containing the updated "dateColumns" array (
     
     return {
       usnColumn: currentSchema.usnColumn,
+      nameColumn: currentSchema.nameColumn || null,
       dateColumns: updated.dateColumns || currentSchema.dateColumns
     };
   } catch (error) {
