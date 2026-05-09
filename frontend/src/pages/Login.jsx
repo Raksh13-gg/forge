@@ -23,13 +23,22 @@ export default function Login() {
 
   if (user) return null;
 
-  const handleDemoLogin = () => {
-    console.log('🏁 ForgeTrack: Executing Absolute Bypass...');
-    mockSignIn(
-      { id: 'demo-f1', email: '4sh24cs001@student.forgetrack.com', user_metadata: { role: 'student', display_name: 'Aarav Patel' } },
-      { id: 'demo-f1', role: 'student', display_name: 'Aarav Patel', student_id: 1 }
-    );
-    window.location.href = '/me/attendance';
+  const handleDemoLogin = (role = 'student') => {
+    if (role === 'mentor') {
+      console.log('🏁 ForgeTrack: Authorizing Mentor Demo...');
+      mockSignIn(
+        { id: 'demo-m1', email: 'nischay@forge.local', user_metadata: { role: 'mentor', display_name: 'Nischay (Mentor)' } },
+        { id: 'demo-m1', role: 'mentor', display_name: 'Nischay (Mentor)' }
+      );
+      window.location.href = '/admin/dashboard';
+    } else {
+      console.log('🏁 ForgeTrack: Authorizing Student Demo...');
+      mockSignIn(
+        { id: 'demo-f1', email: '4sh24cs001@student.forgetrack.com', user_metadata: { role: 'student', display_name: 'Aarav Patel' } },
+        { id: 'demo-f1', role: 'student', display_name: 'Aarav Patel', student_id: 1 }
+      );
+      window.location.href = '/me/attendance';
+    }
   };
 
   const handleLogin = async () => {
@@ -236,9 +245,25 @@ export default function Login() {
             
             <div className="pt-6 flex flex-col items-center gap-4">
               <div className="h-px w-12 bg-border-subtle" />
-              <p className="text-center text-[11px] text-tertiary leading-relaxed px-4">
-                Access is restricted to authorized students and mentors of <span className="text-secondary font-medium">The Forge Engineering Bootcamp</span>.
-              </p>
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-center text-[11px] text-tertiary leading-relaxed px-4">
+                  Access is restricted to authorized students and mentors of <span className="text-secondary font-medium">The Forge Engineering Bootcamp</span>.
+                </p>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => handleDemoLogin('student')}
+                    className="flex-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-glow hover:text-white transition-colors py-2.5 px-4 rounded-lg border border-accent-glow/20 hover:border-accent-glow/50 bg-accent-glow/5"
+                  >
+                    Student Demo
+                  </button>
+                  <button 
+                    onClick={() => handleDemoLogin('mentor')}
+                    className="flex-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-glow hover:text-white transition-colors py-2.5 px-4 rounded-lg border border-accent-glow/20 hover:border-accent-glow/50 bg-accent-glow/5"
+                  >
+                    Mentor Demo
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
